@@ -30,6 +30,11 @@ class ChatBot
 		$this->logger = new Logger( "log.file" );
 	}
 
+	public function __destruct()
+	{
+		unlink( "cookies.tmp" );
+	}
+
 	public function start( $ini_file )
 	{
 		$this->logger->action( "Loading configuration" );
@@ -59,9 +64,9 @@ class ChatBot
 		$this->config = array(
 			"room_id" => $result["roomId"],
 			"chatkey" => $result["chatkey"],
-        	"server" => $result["nodeHostname"],
-        	"server_id" => $result["nodeInstance"],
-        	"port" => $result["nodePort"]
+			"server" => $result["nodeHostname"],
+			"server_id" => $result["nodeInstance"],
+			"port" => $result["nodePort"]
 		);
 
 		$this->get_session();
