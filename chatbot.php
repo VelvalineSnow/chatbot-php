@@ -25,8 +25,8 @@ class ChatBot
 {
 	public function __construct()
 	{
-		$this->mw     = new MediaWiki();
-		$this->http   = new HTTPHandler();
+		$this->mw = new MediaWiki();
+		$this->http = new HTTPHandler();
 		$this->logger = new Logger( "log.file" );
 	}
 
@@ -50,7 +50,6 @@ class ChatBot
 
 		$this->mw->login( $this->cred );
 		$this->get_room_info();
-		$this->connect();
 	}
 
 	private function get_room_info()
@@ -63,34 +62,14 @@ class ChatBot
 		$this->logger->success( "Room info recieved" );
 
 		$this->config = array(
-			"roomId"   => $result["roomId"],
-			"chatkey"  => $result["chatkey"]
+			"room_id" => $result["roomId"],
+			"chatkey" => $result["chatkey"],
+			"server" => $result["nodeHostname"],
+			"server_id" => $result["nodeInstance"],
+			"port" => $result["nodePort"]
 		);
 
-		$this->get_id();
 		$this->get_session();
-	}
-
-	private function get_id()
-	{
-		$this->logger->action( "Retrieving wikia id" );
-
-		$data = array(
-			"action" => "query",
-			"meta"   => "siteinfo",
-			"siprop" => "wikidesc",
-			"format" => "json"
-		);
-
-		$url = $this->cred["wiki_url"] . "/api.php?";
-		$url = $this->http->serialize( $url, $data );
-		$result = $this->http->GET( $url );
-		$result = json_decode( $result, true );
-
-		$this->config["wikiId"]   = $result["query"]["wikidesc"]["id"];
-		$this->config["serverId"] = $result["query"]["wikidesc"]["id"];
-
-		$this->logger->success( "Retrieved wiki id" );
 	}
 
 	private function get_session()
@@ -98,57 +77,24 @@ class ChatBot
 		$this->logger->action( "Retrieving chat session" );
 
 		$data = array(
-			"name"      => str_replace( " ", "_", $this->cred["username"] ),
-			"key"       => $this->config["chatkey"],
-			"roomId"    => $this->config["roomId"],
-			"wikiId"    => $this->config["wikiId"],
-			"serverId"  => $this->config["serverId"],
+			"name" => str_replace( " ", "_", $this->cred["username"] ),
+			"key" => $this->config["chatkey"],
+			"roomId" => $this->config["room_id"],
+			"serverId" => $this->config["server_id"],
+			"EIO" => "2",
 			"transport" => "polling"
 		);
 
-		$url = "http://chat.wikia-services.com/socket.io/?";
+		$url = "http://" . $this->config["server"] . ":" . $this->config["port"] . "/socket.io/1/?";
 		$url = $this->http->serialize( $url, $data );
 		$result = $this->http->GET( $url );
 		$result = preg_replace( "/.*\d\{/", "{", $result );
 		$result = json_decode( $result, true );
-		
-		$this->logger->log( json_encode( $result ) );
 
 		$this->config["sid"] = $result["sid"];
 		$this->config["ping_interval"] = $result["pingInterval"];
 		
 		$this->logger->success( "Chat session retrieved" );
-		$this->logger->log( "Chat SID: " . $this->config["sid"] );
-		$this->logger->log( "Chat ping interval: " . $this->config["ping_interval"] );
-	}
-
-	private function connect()
-	{
-		$this->logger->action( "Attempting to connect to chat" );
-
-		$data = array(
-			"name"      => str_replace( " ", "_", $this->cred["username"] ),
-			"key"       => $this->config["chatkey"],
-			"roomId"    => $this->config["roomId"],
-			"wikiId"    => $this->config["wikiId"],
-			"serverId"  => $this->config["serverId"],
-			"EIO"       => "3",
-			"transport" => "polling",
-			"t"         => time(),
-			"sid"       => $this->config["sid"]
-		);
-
-		$packet = array(
-			"sid" => $this->config["sid"]
-		);
-
-		$url = "http://chat.wikia-services.com/socket.io/?";
-		$url = $this->http->serialize( $url, $data );
-		$result = $this->http->POST( $url, json_encode( $packet ) );
-
-		$this->logger->log( $url );
-
-		$this->logger->log( $result );
 	}
 }
 

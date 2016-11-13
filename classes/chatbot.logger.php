@@ -23,12 +23,7 @@ class Logger
 
 	public function error( $msg )
 	{
-		$this->_write( "[  Error  ]", $msg );
-	}
-
-	public function log( $msg )
-	{
-		$this->_write( "[   Log   ]", $msg );
+		$this->_write( "[ Error ]", $msg );
 	}
 
 	public function action( $msg )
@@ -44,7 +39,7 @@ class Logger
 	private function _write( $type, $msg )
 	{
 		$file = fopen( $this->file, "a" );
-		fwrite( $file, "{ " . date(DATE_RFC2822) . " }" . " " . $type . " " . $msg . "\n");
+		fwrite( $file, "{" . date(DATE_RFC2822) . " }" . " " . $type . " " . $msg . "\n");
 		fclose( $file );
 	}
 }
